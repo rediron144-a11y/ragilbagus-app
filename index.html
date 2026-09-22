@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>HOKIDRAW - Kepala Ekor Master</title>
+
+<!-- Meta Tags untuk PWA / Install ke Home Screen -->
+<meta name="theme-color" content="#1a2a6c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HOKIDRAW">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+
+<!-- Library html2canvas untuk export gambar -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Library Google API untuk Google Drive -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+
+<style>
+  :root{
+    --header-bg: #1a2a6c;
+    --header-text: #f1c40f;
+    --panel: #ffffff;
+    --kepala-bg: #ebf5fb;
+    --kepala-text: #2980b9;
+    --ctkepala-bg: #eafaf1;
+    --ctkepala-text: #1e8449;
+    --ekor-bg: #fdedec;
+    --ekor-text: #c0392b;
+    --ctekor-bg: #fef9e7;
+    --ctekor-text: #b9770e;
+    --export-bg: #10b981;
+    --drive-bg: #4285F4;
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    font-family:"Segoe UI",Roboto,Arial,sans-serif;
+    background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+    margin:0;
+    padding:10px;
+    color:#eee;
+  }
+
+  h1{
+    font-size:18px;
+    text-align:center;
+    margin:10px 0;
+    color: var(--header-text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    background:var(--panel);
+    padding:12px;
+    border-radius:15px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    color: #333;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: #ecf0f1;
+    border: none;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    font-weight: bold;
+    color: #7f8c8d;
+    transition: 0.3s;
+    font-size: 13px;
+    text-transform: uppercase;
+  }
+  .tab-btn.active {
+    background: var(--header-bg);
+    color: var(--header-text);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+  }
+  .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .controls{
+    background: #f4f7f6;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .setting-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .acuan-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .acuan-box label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #555;
+    text-transform: uppercase;
+  }
+  .inp-acuan {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #e67e22;
+    font-weight: bold;
+    font-size: 15px;
+    text-align: center;
+    color: #d35400;
+    outline: none;
+  }
+
+  .btn-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+
+  button{
+    padding:10px 12px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    font-weight: bold;
+    transition: 0.3s;
+    text-transform: uppercase;
+    font-size: 11px;
+  }
+  
+  #btnAddRow { background: #27ae60; color: #fff; flex: 1; min-width: 120px; }
+  #btnCopyAll { background: #2980b9; color: #fff; flex: 2; min-width: 150px; }
+  #btnExportImg { background: var(--export-bg); color: #fff; flex: 2; min-width: 150px; }
+  #btnReset { background: #c0392b; color: #fff; flex: 1; min-width: 80px; }
+  #btnSaveRumus { background: #8e44ad; color: #fff; flex: 1; min-width: 150px; }
+  #btnResetRumus { background: #e74c3c; color: #fff; flex: 1; min-width: 150px; }
+  
+  /* Tombol Baru */
+  .btn-drive { background: var(--drive-bg); color: #fff; flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-install { background: #e67e22; color: #fff; flex: 1; min-width: 140px; display: none; /* Hidden by default until PWA ready */ }
+
+  button:hover{ opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .table-container {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #eee;
+    border-radius: 10px;
+  }
+
+  table{
+    width:100%;
+    min-width: 850px;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+
+  thead{ position:sticky; top:0; z-index:100; }
+
+  thead th{
+    padding:12px 4px;
+    background:var(--header-bg);
+    color:var(--header-text);
+    font-weight:700;
+    border:1px solid rgba(255,255,255,0.1);
+    text-align:center;
+    font-size: 11px;
+  }
+
+  tbody tr:nth-child(even) { background: #fdfdfd; }
+  tbody tr:hover { background: #f0f3f4; }
+
+  tbody td{
+    padding:8px 4px;
+    border:1px solid #eee;
+    text-align:center;
+  }
+
+  .inp{
+    width:80px;
+    padding:10px 5px;
+    border-radius:8px;
+    border: 2px solid #ddd;
+    text-align:center;
+    font-weight: 800;
+    font-size: 15px;
+    color: #2c3e50;
+    outline: none;
+  }
+  .inp:focus { border-color: #2980b9; }
+
+  .row-num {
+    font-weight: bold;
+    color: #7f8c8d;
+    font-size: 14px;
+  }
+
+  .result-box {
+    min-width: 95px;
+    padding: 10px 4px;
+    border-radius: 8px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    font-size: 14px;
+    margin: 0 auto;
+    border: 1px solid rgba(0,0,0,0.1);
+    font-family: 'Courier New', monospace;
+  }
+
+  .kepala9 { background: var(--kepala-bg); color: var(--kepala-text); border-left: 4px solid var(--kepala-text); }
+  .ctkepala { background: var(--ctkepala-bg); color: var(--ctkepala-text); border-left: 4px solid var(--ctkepala-text); font-size: 16px; letter-spacing: 3px; }
+  .ekor9 { background: var(--ekor-bg); color: var(--ekor-text); border-left: 4px solid var(--ekor-text); }
+  .ctekor { background: var(--ctekor-bg); color: var(--ctekor-text); border-left: 4px solid var(--ctekor-text); font-size: 16px; letter-spacing: 3px; }
+
+  .action-btn-group { display: flex; gap: 3px; justify-content: center; }
+
+  .copyBtn{
+    padding:7px;
+    font-size:10px;
+    background: #34495e;
+    color: white;
+    border-radius: 6px;
+  }
+  .delBtn{
+    padding:7px 9px;
+    font-size:11px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 6px;
+  }
+
+  .hide-action-col { display: none !important; }
+
+  .rumus-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .rumus-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .rumus-field label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #2c3e50;
+    text-transform: uppercase;
+  }
+  .rumus-inp {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    font-size: 15px;
+    font-weight: bold;
+    color: #2c3e50;
+    outline: none;
+    text-align: center;
+  }
+  .rumus-inp:focus { border-color: #8e44ad; box-shadow: 0 0 8px rgba(142, 68, 173, 0.3); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    font-size: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.2);
+  }
+
+  .export-watermark {
+    text-align: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccc;
+    font-size: 11px;
+    color: #7f8c8d;
+    font-style: italic;
+  }
+
+  /* Loading & Modal Styles */
+  #loadingOverlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); display: none;
+    justify-content: center; align-items: center;
+    z-index: 2000; color: #fff; font-weight: bold; font-size: 14px;
+    backdrop-filter: blur(3px);
+  }
+  #loadingOverlay.show { display: flex; }
+  .spinner {
+    width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-right: 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #imageModal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 3000;
+    justify-content: center; align-items: center; flex-direction: column;
+    padding: 20px; backdrop-filter: blur(4px);
+  }
+  #modalImage {
+    max-width: 100%; max-height: 65vh; border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); background: #fff; margin-bottom: 15px;
+  }
+  .modal-text { color: #fff; margin-bottom: 15px; font-size: 14px; text-align: center; line-height: 1.5; }
+  .btn-close-modal {
+    width: auto; padding: 12px 32px; background: #e74c3c; color: #fff;
+    border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
+  }
+
+  /* Google Drive Status */
+  #gdriveStatus {
+    font-size: 12px;
+    color: #27ae60;
+    font-weight: bold;
+    margin-top: 8px;
+    display: none;
+    align-items: center;
+    gap: 5px;
+  }
+
+  @media(max-width:720px){
+    thead th { font-size: 9px; padding: 8px 2px; }
+    tbody td { font-size: 10px; padding: 6px 2px; }
+    .inp { width: 65px; font-size: 13px; padding: 8px 2px; }
+    .result-box { min-width: 75px; font-size: 12px; letter-spacing: 1px; }
+    button { font-size: 9px; padding: 6px 4px; }
+    .ctkepala, .ctekor { font-size: 14px; letter-spacing: 2px; }
+    table { min-width: 700px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1 id="mainTitle">HOKIDRAW - KEPALA & EKOR MASTER</h1>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab1" onclick="switchTab('tab1')">🎯 Kepala & Ekor</button>
+    <button class="tab-btn" data-tab="tab2" onclick="switchTab('tab2')">⚙️ Rumus & Sinkronisasi</button>
+  </div>
+
+  <!-- TAB 1 -->
+  <div id="tab1" class="tab-content active">
+    <div id="captureArea" style="background: #ffffff; padding: 15px; border-radius: 10px;">
+      <div style="text-align:center; padding-bottom: 10px; border-bottom: 2px solid var(--header-bg); margin-bottom: 15px;">
+        <div style="font-size: 16px; font-weight: 800; letter-spacing: 1px; color: var(--header-bg);">HOKIDRAW MASTER</div>
+        <div id="exportHeader" style="font-size: 11px; color: #7f8c8d; margin-top: 4px;">Analisa Kepala & Ekor</div>
+      </div>
+
+      <div class="controls" style="box-shadow: none; border: 1px dashed #ccc;">
+        <div class="setting-row">
+          <div class="acuan-box">
+            <label for="multiplierAcuan">🔑 Angka Acuan Perkalian Global:</label>
+            <input type="tel" id="multiplierAcuan" class="inp-acuan" value="45673210" placeholder="Contoh: 45673210">
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container" style="border: 1px solid #ddd;">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th style="width:6%;">No</th>
+              <th style="width:12%;">Result</th>
+              <th style="width:20%;">Kepala 9D</th>
+              <th style="width:16%;">CT Kepala 7D</th>
+              <th style="width:20%;">Ekor 9D</th>
+              <th style="width:16%;">CT Ekor 7D</th>
+              <th style="width:10%;" class="action-col-header">Opsi</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      
+      <div class="legend" style="margin-top: 15px;">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--kepala-bg); border-left:3px solid var(--kepala-text);"></span> Kepala 9D</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--ctkepala-bg); border-left:3px solid var(--ctkepala-text);"></span> CT Kepala 7D</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--ekor-bg); border-left:3px solid var(--ekor-text);"></span> Ekor 9D</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--ctekor-bg); border-left:3px solid var(--ctekor-text);"></span> CT Ekor 7D</div>
+      </div>
+
+      <div class="export-watermark" id="watermark"></div>
+    </div>
+
+    <div class="controls" style="margin-top: 15px;">
+      <div class="btn-row">
+          <button id="btnAddRow">+ Tambah Baris</button>
+          <button id="btnCopyAll">Salin Semua</button>
+          <button id="btnExportImg">📸 Export Gambar</button>
+          <button id="btnReset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: RUMUS & SINKRONISASI -->
+  <div id="tab2" class="tab-content">
+    <div class="controls">
+      <h3 style="margin-top:0; color:#2c3e50; font-size:16px;">💾 Rumus Khusus HOKIDRAW</h3>
+      <div class="rumus-form">
+        <div class="rumus-field">
+          <label for="rumusKepala">🔵 Rumus Khusus Kepala</label>
+          <input type="text" id="rumusKepala" class="rumus-inp" placeholder="Global: 45673210">
+        </div>
+        <div class="rumus-field">
+          <label for="rumusEkor">🔴 Rumus Khusus Ekor</label>
+          <input type="text" id="rumusEkor" class="rumus-inp" placeholder="Global: 45673210">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="btnSaveRumus">Simpan Rumus</button>
+        <button id="btnResetRumus">Reset Rumus Khusus</button>
+      </div>
+    </div>
+
+    <div class="controls" style="border-left: 4px solid var(--drive-bg);">
+      <h3 style="margin-top:0; color:#2c3e50; font-size:16px;">☁️ Sinkronisasi Google Drive</h3>
+      <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">
+        Simpan dan muat data analisa Anda ke Google Drive agar tidak hilang saat ganti HP atau clear cache.
+      </p>
+      
+      <div id="gdriveAuthSection">
+        <button id="btnGDriveLogin" class="btn-drive" onclick="handleAuthClick()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          Login Google Drive
+        </button>
+      </div>
+      <div id="gdriveStatus">✅ Terhubung sebagai: <span id="gdriveUserEmail"></span></div>
+
+      <div class="btn-row" style="margin-top: 15px;">
+        <button id="btnSaveToDrive" class="btn-drive" onclick="saveToDrive()" disabled>⬆️ Simpan ke Drive</button>
+        <button id="btnLoadFromDrive" class="btn-drive" onclick="loadFromDrive()" disabled style="background:#f39c12;">⬇️ Muat dari Drive</button>
+      </div>
+    </div>
+
+    <div class="controls" style="border-left: 4px solid #e67e22;">
+      <h3 style="margin-top:0; color:#2c3e50; font-size:16px;">📲 Install Aplikasi</h3>
+      <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">
+        Tambahkan HOKIDRAW ke Home Screen HP Anda agar bisa dibuka seperti aplikasi native (Full Screen, cepat, tanpa browser bar).
+      </p>
+      <button id="btnInstallApp" class="btn-install" onclick="installApp()">📥 Install ke Home Screen</button>
+      <p id="installHint" style="font-size:11px; color:#7f8c8d; margin-top:8px; display:none;">
+        💡 <em>Di iPhone (Safari): Tekan tombol "Share" (kotak dengan panah ke atas) lalu pilih "Add to Home Screen".</em>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <span id="loadingText">Processing...</span>
+</div>
+
+<!-- Modal Preview Gambar -->
+<div id="imageModal">
+  <div class="modal-text">
+    📸 <strong>Tekan lama (hold)</strong> pada gambar di bawah ini<br>
+    lalu pilih <strong>"Simpan Gambar"</strong> atau <strong>"Bagikan"</strong>
+  </div>
+  <img id="modalImage" src="" alt="Preview Hasil" />
+  <button class="btn-close-modal" onclick="closeImageModal()">TUTUP</button>
+</div>
+
+<script>
+// ==========================================
+// 1. KONFIGURASI GOOGLE DRIVE (GANTI INI!)
+// ==========================================
+const GOOGLE_CLIENT_ID = '686043117622-odsakt0ae0iumifs9vbg8ufaikcq0ja4.apps.googleusercontent.com'; 
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const BACKUP_FILE_NAME = 'hokidraw_backup_data.json';
+
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+
+// ==========================================
+// 2. STATE & STORAGE
+// ==========================================
+let rowCount = 3;
+let rowData = []; 
+let hokidrawKepalaMultiplier = "";
+let hokidrawEkorMultiplier = "";
+
+function loadState() {
+  const savedRowCount = localStorage.getItem('hokidraw_row_count_v1');
+  if (savedRowCount && !isNaN(savedRowCount)) rowCount = parseInt(savedRowCount);
+
+  const savedRowData = localStorage.getItem('hokidraw_row_data_v1');
+  if (savedRowData) {
+    try {
+      rowData = JSON.parse(savedRowData);
+      if (rowData.length > rowCount) rowCount = rowData.length;
+    } catch(e) { rowData = new Array(rowCount).fill(""); }
+  } else {
+    rowData = new Array(rowCount).fill("");
+  }
+
+  const savedKepala = localStorage.getItem('hokidraw_kepala_multiplier_v1');
+  if (savedKepala) hokidrawKepalaMultiplier = savedKepala;
+
+  const savedEkor = localStorage.getItem('hokidraw_ekor_multiplier_v1');
+  if (savedEkor) hokidrawEkorMultiplier = savedEkor;
+}
+
+function saveState() {
+  localStorage.setItem('hokidraw_row_count_v1', rowCount);
+  localStorage.setItem('hokidraw_row_data_v1', JSON.stringify(rowData));
+  localStorage.setItem('hokidraw_kepala_multiplier_v1', hokidrawKepalaMultiplier);
+  localStorage.setItem('hokidraw_ekor_multiplier_v1', hokidrawEkorMultiplier);
+}
+
+function getAcuanValue() {
+  const acuanInput = document.getElementById("multiplierAcuan").value;
+  if (!acuanInput || isNaN(acuanInput)) return 45673210;
+  return parseInt(acuanInput);
+}
+
+// ==========================================
+// 3. GENERATOR FUNCTIONS
+// ==========================================
+function generateKepala9(num, acuan) {
+  let rawStr = String(num * acuan);
+  let uniqueDigits = [];
+  for (let char of rawStr) {
+    if (/^\d$/.test(char) && !uniqueDigits.includes(char)) uniqueDigits.push(char);
+  }
+  if (uniqueDigits.length < 9) {
+    for (let i = 0; i <= 9; i++) {
+      if (uniqueDigits.length >= 9) break;
+      if (!uniqueDigits.includes(String(i))) uniqueDigits.push(String(i));
+    }
+  }
+  return uniqueDigits.slice(0, 9).join('');
+}
+
+function generateEkor9(num, acuan) {
+  let rawStr = String(num * acuan);
+  let uniqueDigits = [];
+  for (let i = rawStr.length - 1; i >= 0; i--) {
+    let char = rawStr[i];
+    if (/^\d$/.test(char) && !uniqueDigits.includes(char)) uniqueDigits.push(char);
+  }
+  if (uniqueDigits.length < 9) {
+    for (let i = 9; i >= 0; i--) {
+      if (uniqueDigits.length >= 9) break;
+      if (!uniqueDigits.includes(String(i))) uniqueDigits.push(String(i));
+    }
+  }
+  return uniqueDigits.slice(0, 9).join('');
+}
+
+function generateCTKepala7(num, acuan) {
+  let rawStr = String(num * acuan);
+  let uniqueDigits = [];
+  for (let char of rawStr) {
+    if (/^\d$/.test(char) && !uniqueDigits.includes(char)) uniqueDigits.push(char);
+  }
+  if (uniqueDigits.length < 7) {
+    for (let i = 0; i <= 9; i++) {
+      if (uniqueDigits.length >= 7) break;
+      if (!uniqueDigits.includes(String(i))) uniqueDigits.push(String(i));
+    }
+  }
+  return uniqueDigits.slice(0, 7).join('');
+}
+
+function generateCTEkor7(num, acuan) {
+  let rawStr = String(num * acuan);
+  let uniqueDigits = [];
+  for (let i = rawStr.length - 1; i >= 0; i--) {
+    let char = rawStr[i];
+    if (/^\d$/.test(char) && !uniqueDigits.includes(char)) uniqueDigits.push(char);
+  }
+  if (uniqueDigits.length < 7) {
+    for (let i = 9; i >= 0; i--) {
+      if (uniqueDigits.length >= 7) break;
+      if (!uniqueDigits.includes(String(i))) uniqueDigits.push(String(i));
+    }
+  }
+  return uniqueDigits.slice(0, 7).join('');
+}
+
+// ==========================================
+// 4. RENDER & CALCULATE
+// ==========================================
+function renderTable() {
+  const tb = document.getElementById("tb");
+  tb.innerHTML = "";
+  
+  for (let i = 0; i < rowCount; i++) {
+    const val = rowData[i] || ""; 
+    const tr = document.createElement("tr");
+    tr.id = "row" + i;
+    tr.innerHTML = `
+      <td class="row-num">${i + 1}</td>
+      <td><input id="inp${i}" class="inp" type="tel" maxlength="4" placeholder="0000" value="${val}"></td>
+      <td><div id="kepala9_${i}" class="result-box kepala9">-</div></td>
+      <td><div id="ctkepala_${i}" class="result-box ctkepala">-</div></td>
+      <td><div id="ekor9_${i}" class="result-box ekor9">-</div></td>
+      <td><div id="ctekor_${i}" class="result-box ctekor">-</div></td>
+      <td class="action-col">
+        <div class="action-btn-group">
+          <button id="copy${i}" class="copyBtn">Salin</button>
+          <button id="del${i}" class="delBtn">-</button>
+        </div>
+      </td>
+    `;
+    tb.appendChild(tr);
+
+    document.getElementById("inp" + i).addEventListener("input", (e) => {
+      rowData[i] = e.target.value;
+      saveState();
+      calculate(i);
+    });
+    
+    document.getElementById("copy" + i).addEventListener("click", () => copyRow(i));
+    document.getElementById("del" + i).addEventListener("click", () => removeRow(i));
+    
+    if (val) calculate(i);
+  }
+}
+
+function calculate(i) {
+  const val = document.getElementById("inp" + i).value;
+  const k9 = document.getElementById("kepala9_" + i);
+  const ck = document.getElementById("ctkepala_" + i);
+  const e9 = document.getElementById("ekor9_" + i);
+  const ce = document.getElementById("ctekor_" + i);
+
+  if (!val || isNaN(val)) {
+    k9.innerText = "-"; ck.innerText = "-"; e9.innerText = "-"; ce.innerText = "-";
+    return;
+  }
+
+  const num = parseInt(val);
+  const acuanGlobal = getAcuanValue();
+
+  let acuanKepala = acuanGlobal;
+  if (hokidrawKepalaMultiplier && !isNaN(hokidrawKepalaMultiplier)) acuanKepala = parseInt(hokidrawKepalaMultiplier);
+
+  let acuanEkor = acuanGlobal;
+  if (hokidrawEkorMultiplier && !isNaN(hokidrawEkorMultiplier)) acuanEkor = parseInt(hokidrawEkorMultiplier);
+  
+  k9.innerText = generateKepala9(num, acuanKepala);
+  ck.innerText = generateCTKepala7(num, acuanKepala);
+  e9.innerText = generateEkor9(num, acuanEkor);
+  ce.innerText = generateCTEkor7(num, acuanEkor);
+}
+
+function recalculateAll() {
+  for (let i = 0; i < rowCount; i++) {
+    const inp = document.getElementById("inp" + i);
+    if(inp && inp.value !== "") calculate(i);
+  }
+}
+
+// ==========================================
+// 5. ACTIONS (Row, Copy, Reset)
+// ==========================================
+function addRow() {
+  rowData.push(""); 
+  rowCount++;
+  saveState();
+  renderTable();
+  setTimeout(() => {
+    const lastRow = document.getElementById("row" + (rowCount - 1));
+    if (lastRow) lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+}
+
+function removeRow(i) {
+  if (rowCount <= 1) { alert("Minimal harus ada 1 baris!"); return; }
+  if (confirm(`Hapus baris ${i + 1}?`)) {
+    rowData.splice(i, 1); 
+    rowCount--;
+    saveState();
+    renderTable();
+  }
+}
+
+function copyRow(i) {
+  const k9 = document.getElementById("kepala9_" + i).innerText;
+  if (k9 === "-") return alert("Isi result dulu Bosqu!");
+  const ck = document.getElementById("ctkepala_" + i).innerText;
+  const e9 = document.getElementById("ekor9_" + i).innerText;
+  const ce = document.getElementById("ctekor_" + i).innerText;
+  const resultVal = document.getElementById("inp" + i).value;
+  const txt = `📊 HOKIDRAW\nResult: ${resultVal}\n\n🔵 Kepala 9D: ${k9}\n🟢 CT Kepala 7D: ${ck}\n🔴 Ekor 9D: ${e9}\n🟡 CT Ekor 7D: ${ce}`;
+  navigator.clipboard.writeText(txt).then(() => alert("Salin Sukses!"));
+}
+
+function copyAll() {
+  let out = `🎯 HOKIDRAW - KEPALA & EKOR MASTER 🎯\n\n`;
+  let hasData = false;
+  let rowNum = 1;
+  for (let i = 0; i < rowCount; i++) {
+    const inpEl = document.getElementById("inp" + i);
+    if (inpEl) {
+      const val = inpEl.value;
+      const k9 = document.getElementById("kepala9_" + i).innerText;
+      if (k9 !== "-") {
+        const ck = document.getElementById("ctkepala_" + i).innerText;
+        const e9 = document.getElementById("ekor9_" + i).innerText;
+        const ce = document.getElementById("ctekor_" + i).innerText;
+        out += `📍 Baris ${rowNum} [${val}]\n🔵 Kepala 9D: ${k9}\n🟢 CT Kepala 7D: ${ck}\n🔴 Ekor 9D: ${e9}\n🟡 CT Ekor 7D: ${ce}\n\n`;
+        hasData = true;
+        rowNum++;
+      }
+    }
+  }
+  if (!hasData) return alert("Belum ada data result yang diisi!");
+  navigator.clipboard.writeText(out + "Salam JP Paus! 💰").then(() => alert("Semua Data Berhasil Disalin!"));
+}
+
+function resetAll() {
+  if (confirm("Reset semua data inputan result? (Rumus khusus & jumlah baris tetap tersimpan)")) {
+    rowData = new Array(rowCount).fill(""); 
+    saveState();
+    renderTable();
+  }
+}
+
+function loadRumusToForm() {
+  document.getElementById("rumusKepala").value = hokidrawKepalaMultiplier;
+  document.getElementById("rumusEkor").value = hokidrawEkorMultiplier;
+}
+
+function saveRumus() {
+  const valK = document.getElementById("rumusKepala").value.trim();
+  const valE = document.getElementById("rumusEkor").value.trim();
+  hokidrawKepalaMultiplier = (valK && !isNaN(valK)) ? valK : "";
+  hokidrawEkorMultiplier = (valE && !isNaN(valE)) ? valE : "";
+  saveState();
+  recalculateAll();
+  alert("✅ Rumus khusus HOKIDRAW berhasil disimpan!");
+}
+
+function resetRumus() {
+  if (confirm("⚠️ Hapus semua rumus khusus HOKIDRAW?")) {
+    hokidrawKepalaMultiplier = "";
+    hokidrawEkorMultiplier = "";
+    saveState();
+    loadRumusToForm();
+    recalculateAll();
+    alert("Rumus khusus berhasil direset.");
+  }
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+  if (tabId === 'tab2') loadRumusToForm();
+}
+
+// ==========================================
+// 6. EXPORT GAMBAR
+// ==========================================
+async function exportToImage() {
+  let hasData = false;
+  for (let i = 0; i < rowCount; i++) {
+    const k9 = document.getElementById("kepala9_" + i);
+    if (k9 && k9.innerText !== "-") { hasData = true; break; }
+  }
+  if (!hasData) return alert("Isi minimal 1 result terlebih dahulu untuk di-export!");
+
+  const captureArea = document.getElementById('captureArea');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  document.getElementById('loadingText').innerText = "Generating Image...";
+  loadingOverlay.classList.add('show');
+  
+  try {
+    const now = new Date();
+    const dateStr = now.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+    document.getElementById('exportHeader').innerText = `Analisa Kepala & Ekor • Generated: ${dateStr}`;
+    document.getElementById('watermark').innerText = `HOKIDRAW Master v3.0 (Cloud Ready) • ${dateStr}`;
+
+    document.querySelectorAll('.action-col, .action-col-header').forEach(el => el.classList.add('hide-action-col'));
+    await new Promise(r => setTimeout(r, 200)); 
+    
+    const canvas = await html2canvas(captureArea, {
+      backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
+      windowWidth: captureArea.scrollWidth 
+    });
+    
+    document.querySelectorAll('.action-col, .action-col-header').forEach(el => el.classList.remove('hide-action-col'));
+
+    if (navigator.share && navigator.canShare) {
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], `HOKIDRAW_${Date.now()}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'HOKIDRAW Result', text: 'Analisa Kepala & Ekor Master' });
+            loadingOverlay.classList.remove('show');
+            return;
+          } catch (err) {
+            if (err.name !== 'AbortError') console.log('Share failed, fallback to modal');
+            else { loadingOverlay.classList.remove('show'); return; }
+          }
+        }
+        showImageModal(canvas.toDataURL('image/png'));
+      }, 'image/png', 1.0);
+    } else {
+      showImageModal(canvas.toDataURL('image/png'));
+    }
+  } catch (err) {
+    document.querySelectorAll('.action-col, .action-col-header').forEach(el => el.classList.remove('hide-action-col'));
+    loadingOverlay.classList.remove('show');
+    alert('Gagal membuat gambar: ' + err.message);
+  }
+}
+
+function showImageModal(dataUrl) {
+  document.getElementById('modalImage').src = dataUrl;
+  document.getElementById('imageModal').style.display = 'flex';
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+function closeImageModal() {
+  document.getElementById('imageModal').style.display = 'none';
+  document.getElementById('modalImage').src = '';
+}
+
+// ==========================================
+// 7. GOOGLE DRIVE INTEGRATION
+// ==========================================
+function gapiLoaded() {
+  gapi.load('client', initializeGapiClient);
+}
+
+async function initializeGapiClient() {
+  await gapi.client.init({
+    apiKey: '', // Tidak wajib untuk OAuth flow ini, tapi bisa diisi jika ada
+    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+  });
+  gapiInited = true;
+  maybeEnableButtons();
+}
+
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: '', // Defined at request time
+  });
+  gisInited = true;
+  maybeEnableButtons();
+}
+
+function maybeEnableButtons() {
+  if (gapiInited && gisInited) {
+    document.getElementById("btnGDriveLogin").disabled = false;
+  }
+}
+
+function handleAuthClick() {
+  if (GOOGLE_CLIENT_ID === 'GANTI_DENGAN_CLIENT_ID_ANDA_DISINI') {
+    return alert("⚠️ Error: Client ID Google belum diatur di dalam kode! Silakan edit file HTML dan ganti 'GANTI_DENGAN_CLIENT_ID_ANDA_DISINI'.");
+  }
+  tokenClient.callback = async (resp) => {
+    if (resp.error !== undefined) {
+      throw (resp);
+    }
+    document.getElementById('gdriveAuthSection').style.display = 'none';
+    document.getElementById('gdriveStatus').style.display = 'flex';
+    // Ambil info user (opsional, sederhana)
+    document.getElementById('gdriveUserEmail').innerText = "Google Account"; 
+    document.getElementById('btnSaveToDrive').disabled = false;
+    document.getElementById('btnLoadFromDrive').disabled = false;
+  };
+
+  if (gapi.client.getToken() === null) {
+    tokenClient.requestAccessToken({prompt: 'consent'});
+  } else {
+    tokenClient.requestAccessToken({prompt: ''});
+  }
+}
+
+async function saveToDrive() {
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  document.getElementById('loadingText').innerText = "Menyimpan ke Google Drive...";
+  loadingOverlay.classList.add('show');
+
+  try {
+    const dataToSave = {
+      version: "3.0",
+      timestamp: new Date().toISOString(),
+      rowCount: rowCount,
+      rowData: rowData,
+      kepalaMultiplier: hokidrawKepalaMultiplier,
+      ekorMultiplier: hokidrawEkorMultiplier,
+      acuanGlobal: getAcuanValue()
+    };
+    const fileContent = JSON.stringify(dataToSave, null, 2);
+    const blob = new Blob([fileContent], { type: 'application/json' });
+
+    // Cek apakah file sudah ada
+    const response = await gapi.client.drive.files.list({
+      q: `name='${BACKUP_FILE_NAME}' and trashed=false`,
+      fields: 'files(id, name)',
+      spaces: 'drive'
+    });
+
+    const files = response.result.files;
+    if (files && files.length > 0) {
+      // Update file yang ada
+      const fileId = files[0].id;
+      await gapi.client.request({
+        path: `/upload/drive/v3/files/${fileId}`,
+        method: 'PATCH',
+        params: { uploadType: 'media' },
+        body: blob
+      });
+      alert("✅ Data berhasil diperbarui di Google Drive!");
+    } else {
+      // Buat file baru
+      const metadata = {
+        name: BACKUP_FILE_NAME,
+        mimeType: 'application/json'
+      };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', blob);
+
+      await gapi.client.request({
+        path: 'https://www.googleapis.com/upload/drive/v3/files',
+        method: 'POST',
+        params: { uploadType: 'multipart' },
+        body: form
+      });
+      alert("✅ Data berhasil disimpan ke Google Drive!");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Gagal menyimpan ke Drive: " + err.message);
+  } finally {
+    loadingOverlay.classList.remove('show');
+  }
+}
+
+async function loadFromDrive() {
+  if(!confirm("Muat dari Drive akan menimpa data saat ini di perangkat ini. Lanjutkan?")) return;
+
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  document.getElementById('loadingText').innerText = "Memuat dari Google Drive...";
+  loadingOverlay.classList.add('show');
+
+  try {
+    const response = await gapi.client.drive.files.list({
+      q: `name='${BACKUP_FILE_NAME}' and trashed=false`,
+      fields: 'files(id, name)',
+      spaces: 'drive'
+    });
+
+    const files = response.result.files;
+    if (files && files.length > 0) {
+      const fileId = files[0].id;
+      const res = await gapi.client.drive.files.get({
+        fileId: fileId,
+        alt: 'media'
+      });
+      
+      const data = res.body;
+      if (data.rowCount) rowCount = data.rowCount;
+      if (data.rowData) rowData = data.rowData;
+      if (data.kepalaMultiplier !== undefined) hokidrawKepalaMultiplier = data.kepalaMultiplier;
+      if (data.ekorMultiplier !== undefined) hokidrawEkorMultiplier = data.ekorMultiplier;
+      if (data.acuanGlobal) document.getElementById("multiplierAcuan").value = data.acuanGlobal;
+
+      saveState();
+      renderTable();
+      loadRumusToForm();
+      alert("✅ Data berhasil dimuat dari Google Drive!");
+    } else {
+      alert("⚠️ Tidak ditemukan file backup di Google Drive Anda.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Gagal memuat dari Drive: " + err.message);
+  } finally {
+    loadingOverlay.classList.remove('show');
+  }
+}
+
+// ==========================================
+// 8. PWA / INSTALL APP LOGIC
+// ==========================================
+let deferredPrompt;
+
+// Buat Manifest Dinamis (Agar tetap 1 file HTML)
+const manifest = {
+  "name": "HOKIDRAW Master",
+  "short_name": "HOKIDRAW",
+  "start_url": window.location.href,
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a2a6c",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+};
+const stringManifest = JSON.stringify(manifest);
+const blobManifest = new Blob([stringManifest], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blobManifest);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestURL;
+document.head.appendChild(link);
+
+// Service Worker minimal (Opsional, untuk mendukung PWA full)
+if ('serviceWorker' in navigator) {
+  // Kita buat SW inline via Blob agar tetap single file
+  const swCode = `
+    self.addEventListener('install', (e) => { e.waitUntil(self.skipWaiting()); });
+    self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+    self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); });
+  `;
+  const blobSW = new Blob([swCode], {type: 'application/javascript'});
+  const swURL = URL.createObjectURL(blobSW);
+  navigator.serviceWorker.register(swURL).catch(err => console.log('SW registration failed', err));
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('btnInstallApp').style.display = 'block';
+});
+
+// Deteksi iOS untuk menampilkan hint
+const isIos = () => {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+};
+
+if (window.matchMedia('(display-mode: standalone)').matches || isIos()) {
+  document.getElementById('btnInstallApp').style.display = 'none';
+  if(isIos()) document.getElementById('installHint').style.display = 'block';
+}
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      }
+      deferredPrompt = null;
+      document.getElementById('btnInstallApp').style.display = 'none';
+    });
+  }
+}
+
+// ==========================================
+// 9. INISIALISASI
+// ==========================================
+loadState();
+renderTable();
+
+document.getElementById("btnAddRow").addEventListener("click", addRow);
+document.getElementById("btnReset").addEventListener("click", resetAll);
+document.getElementById("btnCopyAll").addEventListener("click", copyAll);
+document.getElementById("btnExportImg").addEventListener("click", exportToImage);
+document.getElementById("multiplierAcuan").addEventListener("input", recalculateAll);
+document.getElementById("btnSaveRumus").addEventListener("click", saveRumus);
+document.getElementById("btnResetRumus").addEventListener("click", resetRumus);
+
+// Load Google Scripts
+window.onload = () => {
+  gapiLoaded();
+  gisLoaded();
+};
+</script>
+</body>
+</html>
